@@ -1,4 +1,4 @@
-package com.tobiasschuerg.photobooth
+package com.tobiasschuerg.photobooth.util
 
 import android.view.View
 import android.view.Window

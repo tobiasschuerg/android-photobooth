@@ -1,7 +1,8 @@
-package com.tobiasschuerg.photobooth.gphoto.base
+package com.tobiasschuerg.photobooth.base
 
 import android.os.Bundle
 import androidx.annotation.LayoutRes
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -13,11 +14,12 @@ import kotlin.coroutines.CoroutineContext
 abstract class BaseFragment(@LayoutRes layout: Int) : Fragment(layout), CoroutineScope {
 
     private val exceptionHandler = CoroutineExceptionHandler { cc, exception ->
-        Timber.e(exception)
+        val fragment = javaClass.simpleName
+        Timber.e(exception, "in $fragment")
         throw exception
     }
 
-    protected lateinit var job: Job
+    private lateinit var job: Job
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.Main + exceptionHandler
 
@@ -29,5 +31,13 @@ abstract class BaseFragment(@LayoutRes layout: Int) : Fragment(layout), Coroutin
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
+    }
+
+    fun showMessage(message: String) {
+        context?.let {
+            AlertDialog.Builder(it)
+                .setMessage(message)
+                .show()
+        }
     }
 }

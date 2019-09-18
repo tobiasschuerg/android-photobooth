@@ -6,11 +6,12 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProviders
-import com.tobiasschuerg.photobooth.FullscreenUtil.hideSystemUI
+import com.tobiasschuerg.photobooth.util.FullscreenUtil.hideSystemUI
 import com.tobiasschuerg.photobooth.R
 import com.tobiasschuerg.photobooth.gphoto.GPhoto2ServiceImpl
-import com.tobiasschuerg.photobooth.gphoto.base.BaseFragment
+import com.tobiasschuerg.photobooth.base.BaseFragment
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class MainFragment : BaseFragment(R.layout.main_fragment) {
 
@@ -38,23 +39,31 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         button.setOnClickListener {
             hideSystemUI(activity!!.window)
             launch {
-                foo()
+                takePhoto()
             }
         }
     }
 
-    private suspend fun foo() {
+    private suspend fun takePhoto() {
+        Timber.i("Take photo")
+        infoText.text = "get ready ..."
         val photoService = GPhoto2ServiceImpl()
         photoService.status()
-        val fileName = photoService.capture()
-        infoText.setText(fileName)
+        try {
 
-        val thumb = photoService.thumbnail(fileName)
+            val fileName = photoService.capture()
+            infoText.text = fileName
 
-        when (count++ % 3) {
-            0 -> preview1.setImageBitmap(thumb)
-            1 -> preview2.setImageBitmap(thumb)
-            2 -> preview3.setImageBitmap(thumb)
+            val thumb = photoService.thumbnail(fileName)
+
+            when (count++ % 3) {
+                0 -> preview1.setImageBitmap(thumb)
+                1 -> preview2.setImageBitmap(thumb)
+                2 -> preview3.setImageBitmap(thumb)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "take photo failed")
+            showMessage("Capturing photo failed")
         }
 
     }

@@ -1,4 +1,4 @@
-package com.tobiasschuerg.photobooth
+package com.tobiasschuerg.photobooth.base
 
 import android.app.Application
 import timber.log.Timber
