@@ -1,5 +1,6 @@
 package com.tobiasschuerg.photobooth.ui.main
 
+import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -8,16 +9,21 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProviders
 import com.bumptech.glide.Glide
 import com.tobiasschuerg.photobooth.R
 import com.tobiasschuerg.photobooth.base.BaseFragment
 import com.tobiasschuerg.photobooth.collage.CollageServiceImpl
 import com.tobiasschuerg.photobooth.gphoto.GPhoto2ServiceImpl
+import com.tobiasschuerg.photobooth.util.FileUtil
 import com.tobiasschuerg.photobooth.util.FullscreenUtil.hideSystemUI
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.system.measureTimeMillis
 
 
 class MainFragment : BaseFragment(R.layout.main_fragment) {
@@ -53,7 +59,7 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         preview3 = view.findViewById(R.id.preview3)
         preview4 = view.findViewById(R.id.preview4)
 
-        button = view.findViewById<Button>(R.id.take_a_photo_button)
+        button = view.findViewById(R.id.take_a_photo_button)
         button.setOnClickListener {
             hideSystemUI(activity!!.window)
             launch {
@@ -65,20 +71,27 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
     override fun onResume() {
         super.onResume()
 
-        val jan: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.jan)
-        val sa: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.sa)
-        val tp: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.pt)
+//        ActivityCompat.requestPermissions(
+//            activity!!,
+//            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+//            0
+//        )
 
-        val imput = listOf(jan, sa, tp)
 
-        Glide.with(this).load(imput.random()).into(preview2)
-
-        val cs = CollageServiceImpl()
-        Timber.d("bitmaps loaded")
-        val collage: Bitmap = cs.create(imput)
-        Timber.d("bitmap created")
-
-        Glide.with(this).load(collage).into(preview3)
+//        val jan: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.jan)
+//        val sa: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.sa)
+//        val tp: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.pt)
+//
+//        val imput = listOf(jan, sa, tp)
+//
+//        Glide.with(this).load(imput.random()).into(preview2)
+//
+//        val cs = CollageServiceImpl()
+//        Timber.d("bitmaps loaded")
+//        val collage: Bitmap = cs.create(imput)
+//        Timber.d("bitmap created")
+//
+//        Glide.with(this).load(collage).into(preview3)
     }
 
     private suspend fun newSession() {
@@ -90,7 +103,9 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         infoText.text = getString(R.string.get_ready_)
         delay(2500)
 
-        (0..2).forEach {
+        val fullSizePhotos: MutableList<Deferred<Uri>> = mutableListOf()
+
+        (0..1).forEach {
             try {
                 launch {
                     countDown(5)
@@ -102,7 +117,6 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
                 message.text = fileName
 
                 val thumb = photoService.thumbnail(fileName)
-
                 val view = when (it % 4) {
                     0 -> preview1
                     1 -> preview2
@@ -112,14 +126,36 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
                 }
                 Glide.with(this).load(thumb).into(view)
 
-                // TODO: download full file
-
+                val job: Deferred<Uri> = async {
+                    val fullSize = photoService.fullSize(fileName)
+                    val uri = FileUtil.saveToFile(fullSize, fileName, context!!)
+                    Timber.d("Saved photo to $uri")
+                    uri
+                }
+                fullSizePhotos.add(job)
 
             } catch (e: Exception) {
                 Timber.e(e, "take photo failed")
                 showMessage("Capturing photo failed")
             }
         }
+
+        val joinTime = measureTimeMillis {
+            fullSizePhotos.map { it.await() }
+                .forEachIndexed { index, uri ->
+                    val view = when (index % 4) {
+                        3 -> preview1
+                        2 -> preview2
+                        1 -> preview3
+                        0 -> preview4
+                        else -> throw IllegalArgumentException()
+                    }
+                    Glide.with(this).load(uri).into(view)
+                }
+        }
+        Timber.i("Joining took $joinTime millis")
+
+        infoText.text = null
         button.visibility = View.VISIBLE
     }
 

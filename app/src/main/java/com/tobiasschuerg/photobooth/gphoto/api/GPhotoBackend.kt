@@ -16,4 +16,7 @@ interface GPhotoBackend {
 
     @GET("thumb/{id}")
     fun thumbnail(@Path("id") id: String): Call<ResponseBody>
+
+    @GET("photo/{id}")
+    fun fullSize(@Path("id") id: String): Call<ResponseBody>
 }

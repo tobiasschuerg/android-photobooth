@@ -9,6 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.await
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import timber.log.Timber
+import kotlin.system.measureTimeMillis
 
 
 class GPhoto2ServiceImpl : GPhoto2Service {
@@ -34,8 +35,22 @@ class GPhoto2ServiceImpl : GPhoto2Service {
     }
 
     override suspend fun thumbnail(fileName: String): Bitmap {
-        val byteArray = api.thumbnail(fileName).await().byteStream().readBytes()
-        val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+        var bitmap: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val millis = measureTimeMillis {
+            val byteArray = api.thumbnail(fileName).await().byteStream().readBytes()
+            bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+        }
+        Timber.i("Downloading thumbnail took $millis millis")
+        return bitmap
+    }
+
+    override suspend fun fullSize(fileName: String): Bitmap {
+        var bitmap: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val millis = measureTimeMillis {
+            val byteArray = api.fullSize(fileName).await().byteStream().readBytes()
+            bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+        }
+        Timber.i("Download full size photo took $millis millis")
         return bitmap
     }
 }

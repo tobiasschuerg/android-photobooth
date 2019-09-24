@@ -9,4 +9,5 @@ interface GPhoto2Service {
     suspend fun capture(): String
 
     suspend fun thumbnail(fileName: String): Bitmap
+    suspend fun fullSize(fileName: String): Bitmap
 }
