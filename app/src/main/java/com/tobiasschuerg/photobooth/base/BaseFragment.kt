@@ -13,7 +13,7 @@ import kotlin.coroutines.CoroutineContext
 
 abstract class BaseFragment(@LayoutRes layout: Int) : Fragment(layout), CoroutineScope {
 
-    private val exceptionHandler = CoroutineExceptionHandler { cc, exception ->
+    private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         val fragment = javaClass.simpleName
         Timber.e(exception, "in $fragment")
         throw exception

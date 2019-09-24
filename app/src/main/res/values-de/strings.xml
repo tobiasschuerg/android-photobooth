@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Photobooth</string>
+    <string name="get_ready_">Bereit machen ...</string>
+    <string name="action_settings">Einstellungen</string>
+</resources>
