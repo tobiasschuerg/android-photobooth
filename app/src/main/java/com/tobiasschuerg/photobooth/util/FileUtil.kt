@@ -16,7 +16,7 @@ import java.util.*
 
 object FileUtil {
 
-    suspend fun saveToFile(bitmap: Bitmap, fileName: String, context: Context): Uri =
+    suspend fun saveToFile(bitmap: Bitmap, fileName: String, context: Context): Uri? =
         withContext(Dispatchers.IO) {
             // val dir = context.getExternalFilesDir("photobooth")
             val dir = Environment.getExternalStoragePublicDirectory("photobooth")
@@ -30,11 +30,12 @@ object FileUtil {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, stream)
                 stream.flush()
                 stream.close()
+                Timber.d("File succcessfully written: $file")
+                file.toUri()
             } catch (e: IOException) {
                 Timber.e(e, "Writing file failed")
+                null
             }
-
-            file.toUri()
         }
 
 }

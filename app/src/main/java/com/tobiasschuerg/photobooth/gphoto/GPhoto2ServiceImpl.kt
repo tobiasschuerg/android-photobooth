@@ -2,6 +2,7 @@ package com.tobiasschuerg.photobooth.gphoto
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.tobiasschuerg.photobooth.Config
 import com.tobiasschuerg.photobooth.gphoto.api.GPhotoBackend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +17,7 @@ class GPhoto2ServiceImpl : GPhoto2Service {
 
     private val api: GPhotoBackend by lazy {
         val retrofit = Retrofit.Builder()
-            .baseUrl(Config.BASE_URL)
+            .baseUrl(Config.RASPBERRY_URL)
             .addConverterFactory(ScalarsConverterFactory.create())
             .build()
         retrofit.create(GPhotoBackend::class.java)

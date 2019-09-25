@@ -1,21 +1,17 @@
 package com.tobiasschuerg.photobooth.ui.main
 
-import android.Manifest
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProviders
 import com.bumptech.glide.Glide
 import com.tobiasschuerg.photobooth.R
 import com.tobiasschuerg.photobooth.base.BaseFragment
-import com.tobiasschuerg.photobooth.collage.CollageServiceImpl
 import com.tobiasschuerg.photobooth.gphoto.GPhoto2ServiceImpl
+import com.tobiasschuerg.photobooth.upload.Uploader
 import com.tobiasschuerg.photobooth.util.FileUtil
 import com.tobiasschuerg.photobooth.util.FullscreenUtil.hideSystemUI
 import kotlinx.coroutines.Deferred
@@ -103,7 +99,7 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         infoText.text = getString(R.string.get_ready_)
         delay(2500)
 
-        val fullSizePhotos: MutableList<Deferred<Uri>> = mutableListOf()
+        val fullSizePhotos: MutableList<Deferred<Uri?>> = mutableListOf()
 
         (0..1).forEach {
             try {
@@ -126,7 +122,7 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
                 }
                 Glide.with(this).load(thumb).into(view)
 
-                val job: Deferred<Uri> = async {
+                val job: Deferred<Uri?> = async {
                     val fullSize = photoService.fullSize(fileName)
                     val uri = FileUtil.saveToFile(fullSize, fileName, context!!)
                     Timber.d("Saved photo to $uri")
@@ -152,6 +148,9 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
                     }
                     Glide.with(this).load(uri).into(view)
                 }
+
+            val photoUri: Uri = fullSizePhotos.mapNotNull { it.await() }.first()
+            Uploader.upload(photoUri)
         }
         Timber.i("Joining took $joinTime millis")
 
