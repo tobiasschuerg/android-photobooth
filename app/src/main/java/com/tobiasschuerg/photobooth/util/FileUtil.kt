@@ -1,6 +1,5 @@
 package com.tobiasschuerg.photobooth.util
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
@@ -16,7 +15,7 @@ import java.util.*
 
 object FileUtil {
 
-    suspend fun saveToFile(bitmap: Bitmap, fileName: String, context: Context): Uri? =
+    suspend fun saveToFile(bitmap: Bitmap): Uri? =
         withContext(Dispatchers.IO) {
             // val dir = context.getExternalFilesDir("photobooth")
             val dir = Environment.getExternalStoragePublicDirectory("photobooth")

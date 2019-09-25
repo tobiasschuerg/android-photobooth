@@ -1,15 +1,18 @@
 package com.tobiasschuerg.photobooth.ui.main
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.net.toFile
 import androidx.lifecycle.ViewModelProviders
 import com.bumptech.glide.Glide
 import com.tobiasschuerg.photobooth.R
 import com.tobiasschuerg.photobooth.base.BaseFragment
+import com.tobiasschuerg.photobooth.collage.CollageServiceImpl
 import com.tobiasschuerg.photobooth.gphoto.GPhoto2ServiceImpl
 import com.tobiasschuerg.photobooth.upload.Uploader
 import com.tobiasschuerg.photobooth.util.FileUtil
@@ -38,6 +41,7 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
     private var photos: List<Uri> = mutableListOf()
 
     private val photoService = GPhoto2ServiceImpl()
+    private val collageService = CollageServiceImpl()
 
     companion object {
         fun newInstance() = MainFragment()
@@ -99,9 +103,9 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         infoText.text = getString(R.string.get_ready_)
         delay(2500)
 
-        val fullSizePhotos: MutableList<Deferred<Uri?>> = mutableListOf()
+        val photoJobs: MutableList<Deferred<Uri?>> = mutableListOf()
 
-        (0..1).forEach {
+        (0..3).forEach {
             try {
                 launch {
                     countDown(5)
@@ -124,11 +128,11 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
 
                 val job: Deferred<Uri?> = async {
                     val fullSize = photoService.fullSize(fileName)
-                    val uri = FileUtil.saveToFile(fullSize, fileName, context!!)
+                    val uri = FileUtil.saveToFile(fullSize)
                     Timber.d("Saved photo to $uri")
                     uri
                 }
-                fullSizePhotos.add(job)
+                photoJobs.add(job)
 
             } catch (e: Exception) {
                 Timber.e(e, "take photo failed")
@@ -137,20 +141,25 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         }
 
         val joinTime = measureTimeMillis {
-            fullSizePhotos.map { it.await() }
-                .forEachIndexed { index, uri ->
-                    val view = when (index % 4) {
-                        3 -> preview1
-                        2 -> preview2
-                        1 -> preview3
-                        0 -> preview4
-                        else -> throw IllegalArgumentException()
-                    }
-                    Glide.with(this).load(uri).into(view)
+            val fullSizePhotos: List<Uri> = photoJobs.map { it.await() }.filterNotNull()
+            fullSizePhotos.forEachIndexed { index, uri ->
+                val view = when (index % 4) {
+                    3 -> preview1
+                    2 -> preview2
+                    1 -> preview3
+                    0 -> preview4
+                    else -> throw IllegalArgumentException()
                 }
+                Glide.with(this).load(uri).into(view)
+            }
 
-            val photoUri: Uri = fullSizePhotos.mapNotNull { it.await() }.first()
-            Uploader.upload(photoUri)
+            val bitmaps = fullSizePhotos.map { BitmapFactory.decodeFile(it.toFile().toString()) }
+            val collage = collageService.create(bitmaps)
+            val collageUri = FileUtil.saveToFile(collage)
+            Glide.with(this).load(collage).into(preview3)
+            if (collageUri != null) {
+                Uploader.upload(collageUri)
+            }
         }
         Timber.i("Joining took $joinTime millis")
 
