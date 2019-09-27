@@ -52,14 +52,14 @@ object Uploader {
         Timber.d("Upload $uri")
         val file = uri.toFile()
         val mediaType: MediaType =
-            "multipart/form-data".toMediaTypeOrNull() ?: throw IllegalStateException()
+            "image/jpeg".toMediaTypeOrNull() ?: throw IllegalStateException()
         val requestFile = file.asRequestBody(mediaType)
 
-        val body: MultipartBody.Part =
+        val files: MultipartBody.Part =
             MultipartBody.Part.createFormData("files", file.name, requestFile)
 
         try {
-            val response: Response<String> = api.upload(body).awaitResponse()
+            val response: Response<String> = api.upload(files, true).awaitResponse()
             Timber.i("Upload finished: ${response.body()}")
         } catch (t: Throwable) {
             Timber.e(t, "Upload failed")

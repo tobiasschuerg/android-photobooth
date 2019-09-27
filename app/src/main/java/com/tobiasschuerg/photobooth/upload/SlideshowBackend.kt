@@ -10,6 +10,6 @@ interface SlideshowBackend {
 
     @Multipart
     @POST("upload")
-    fun upload(@Part file: MultipartBody.Part): Call<String>
+    fun upload(@Part files: MultipartBody.Part, @Part("print") print: Boolean): Call<String>
 
 }
