@@ -1,8 +1,10 @@
 package com.tobiasschuerg.photobooth.ui.main
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -13,6 +15,7 @@ import com.bumptech.glide.Glide
 import com.tobiasschuerg.photobooth.R
 import com.tobiasschuerg.photobooth.base.BaseFragment
 import com.tobiasschuerg.photobooth.collage.CollageServiceImpl
+import com.tobiasschuerg.photobooth.gphoto.GPhoto2Service
 import com.tobiasschuerg.photobooth.gphoto.GPhoto2ServiceImpl
 import com.tobiasschuerg.photobooth.upload.Uploader
 import com.tobiasschuerg.photobooth.util.FileUtil
@@ -35,12 +38,18 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
     private lateinit var preview3: ImageView
     private lateinit var preview4: ImageView
 
+    private lateinit var finalImgae: ImageView
+
     private lateinit var button: Button
+    private lateinit var settings: Button
 
     private var session = 0
     private var photos: List<Uri> = mutableListOf()
 
-    private val photoService = GPhoto2ServiceImpl()
+    private val photoService: GPhoto2Service by lazy {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        GPhoto2ServiceImpl(prefs)
+    }
     private val collageService = CollageServiceImpl()
 
     companion object {
@@ -58,9 +67,16 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         preview2 = view.findViewById(R.id.preview2)
         preview3 = view.findViewById(R.id.preview3)
         preview4 = view.findViewById(R.id.preview4)
+        finalImgae = view.findViewById(R.id.final_image)
 
+        settings = view.findViewById(R.id.settings)
+        settings.setOnClickListener {
+            val settings = Intent(context, SettingsActivity::class.java)
+            startActivity(settings)
+        }
         button = view.findViewById(R.id.take_a_photo_button)
         button.setOnClickListener {
+            resetViews()
             hideSystemUI(activity!!.window)
             launch {
                 newSession()
@@ -68,30 +84,19 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
         }
     }
 
+    private fun resetViews() {
+        settings.visibility = View.GONE
+        finalImgae.setImageDrawable(null)
+        finalImgae.visibility = View.GONE
+        preview1.setImageDrawable(null)
+        preview2.setImageDrawable(null)
+        preview3.setImageDrawable(null)
+        preview4.setImageDrawable(null)
+        infoText.visibility = View.VISIBLE
+    }
+
     override fun onResume() {
         super.onResume()
-
-//        ActivityCompat.requestPermissions(
-//            activity!!,
-//            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-//            0
-//        )
-
-
-//        val jan: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.jan)
-//        val sa: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.sa)
-//        val tp: Bitmap = BitmapFactory.decodeResource(context!!.resources, R.drawable.pt)
-//
-//        val imput = listOf(jan, sa, tp)
-//
-//        Glide.with(this).load(imput.random()).into(preview2)
-//
-//        val cs = CollageServiceImpl()
-//        Timber.d("bitmaps loaded")
-//        val collage: Bitmap = cs.create(imput)
-//        Timber.d("bitmap created")
-//
-//        Glide.with(this).load(collage).into(preview3)
     }
 
     private suspend fun newSession() {
@@ -153,10 +158,14 @@ class MainFragment : BaseFragment(R.layout.main_fragment) {
                 Glide.with(this).load(uri).into(view)
             }
 
+            infoText.visibility = View.GONE
+
             val bitmaps = fullSizePhotos.map { BitmapFactory.decodeFile(it.toFile().toString()) }
             val collage = collageService.create(bitmaps)
             val collageUri = FileUtil.saveToFile(collage)
-            Glide.with(this).load(collage).into(preview3)
+
+            finalImgae.visibility = View.VISIBLE
+            Glide.with(this).load(collage).into(finalImgae)
             if (collageUri != null) {
                 Uploader.upload(collageUri)
             }

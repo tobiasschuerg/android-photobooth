@@ -48,7 +48,7 @@ object Uploader {
         retrofit.create(SlideshowBackend::class.java)
     }
 
-    suspend fun upload(uri: Uri) = withContext(Dispatchers.IO) {
+    suspend fun upload(uri: Uri, print: Boolean = false) = withContext(Dispatchers.IO) {
         Timber.d("Upload $uri")
         val file = uri.toFile()
         val mediaType: MediaType =
@@ -59,7 +59,7 @@ object Uploader {
             MultipartBody.Part.createFormData("files", file.name, requestFile)
 
         try {
-            val response: Response<String> = api.upload(files, true).awaitResponse()
+            val response: Response<String> = api.upload(files, false).awaitResponse()
             Timber.i("Upload finished: ${response.body()}")
         } catch (t: Throwable) {
             Timber.e(t, "Upload failed")

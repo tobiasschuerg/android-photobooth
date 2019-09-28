@@ -1,9 +1,10 @@
 package com.tobiasschuerg.photobooth.gphoto
 
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.tobiasschuerg.photobooth.Config
 import com.tobiasschuerg.photobooth.gphoto.api.GPhotoBackend
+import com.tobiasschuerg.photobooth.ui.main.SettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
@@ -13,11 +14,22 @@ import timber.log.Timber
 import kotlin.system.measureTimeMillis
 
 
-class GPhoto2ServiceImpl : GPhoto2Service {
+class GPhoto2ServiceImpl(
+    preferences: SharedPreferences
+) : GPhoto2Service {
+
+    private val raspBerryUrl: String by lazy {
+
+        preferences.getString(
+            SettingsActivity.PREFS_KEY_RASPBERRY_URL,
+            SettingsActivity.RASPBERRY_URL_DEFAULT
+        )!!
+
+    }
 
     private val api: GPhotoBackend by lazy {
         val retrofit = Retrofit.Builder()
-            .baseUrl(Config.RASPBERRY_URL)
+            .baseUrl(raspBerryUrl)
             .addConverterFactory(ScalarsConverterFactory.create())
             .build()
         retrofit.create(GPhotoBackend::class.java)

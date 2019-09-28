@@ -20,5 +20,4 @@ object FullscreenUtil {
                 or View.SYSTEM_UI_FLAG_FULLSCREEN)
     }
 
-
 }
